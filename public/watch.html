@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>Watch Video - MyFlix</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:#080808;
+  color:white;
+  font-family:Arial,sans-serif;
+}
+
+header{
+  height:65px;
+  background:#111;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 6%;
+  border-bottom:1px solid #292929;
+}
+
+.logo{
+  color:#e50914;
+  font-size:25px;
+  font-weight:bold;
+}
+
+.home{
+  color:white;
+  text-decoration:none;
+  background:#e50914;
+  padding:10px 16px;
+  border-radius:6px;
+}
+
+main{
+  width:92%;
+  max-width:1000px;
+  margin:30px auto;
+}
+
+.player{
+  width:100%;
+  background:#000;
+  border-radius:10px;
+  overflow:hidden;
+}
+
+video{
+  width:100%;
+  max-height:70vh;
+  display:block;
+  background:#000;
+}
+
+h1{
+  font-size:28px;
+  margin-top:25px;
+}
+
+.description{
+  color:#aaa;
+  line-height:1.6;
+}
+
+.download{
+  display:inline-block;
+  margin-top:15px;
+  background:#198754;
+  color:white;
+  text-decoration:none;
+  padding:12px 18px;
+  border-radius:6px;
+}
+
+.message{
+  text-align:center;
+  color:#aaa;
+  padding:50px 10px;
+}
+
+@media(max-width:600px){
+
+  h1{
+    font-size:22px;
+  }
+
+  main{
+    margin-top:15px;
+  }
+
+}
+</style>
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+MYFLIX
+</div>
+
+<a class="home" href="/">
+Home
+</a>
+
+</header>
+
+<main>
+
+<div id="content">
+
+<p class="message">
+⏳ Video load हो रहा है...
+</p>
+
+</div>
+
+</main>
+
+<script>
+
+const params =
+new URLSearchParams(window.location.search);
+
+const id =
+params.get("id");
+
+async function loadVideo(){
+
+  const content =
+  document.getElementById("content");
+
+  if(!id){
+
+    content.innerHTML =
+    `<p class="message">
+      ❌ Video ID नहीं मिली।
+    </p>`;
+
+    return;
+  }
+
+  try{
+
+    const response =
+    await fetch("/api/videos/" + id);
+
+    if(!response.ok){
+
+      throw new Error("Video not found");
+
+    }
+
+    const video =
+    await response.json();
+
+    document.title =
+    video.title + " - MyFlix";
+
+    content.innerHTML = `
+
+      <div class="player">
+
+        <video
+          controls
+          preload="metadata"
+          src="/video/${video.id}"
+        ></video>
+
+      </div>
+
+      <h1>
+        ${escapeHTML(video.title)}
+      </h1>
+
+      <p class="description">
+        ${escapeHTML(video.description || "")}
+      </p>
+
+      <a
+        class="download"
+        href="/download/${video.id}"
+      >
+        ⬇ Download Video
+      </a>
+
+    `;
+
+  }catch(error){
+
+    content.innerHTML =
+    `<p class="message">
+      ❌ Video नहीं मिला।
+    </p>`;
+
+  }
+
+}
+
+function escapeHTML(text){
+
+  return String(text)
+  .replace(/&/g,"&amp;")
+  .replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;")
+  .replace(/'/g,"&#039;");
+
+}
+
+loadVideo();
+
+</script>
+
+</body>
+</html>
