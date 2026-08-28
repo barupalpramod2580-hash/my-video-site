@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Login - MyFlix</title>
+
+<style>
+body{
+  margin:0;
+  background:#0b0b0b;
+  color:white;
+  font-family:Arial,sans-serif;
+}
+
+.box{
+  width:90%;
+  max-width:400px;
+  margin:100px auto;
+  background:#171717;
+  padding:25px;
+  border-radius:12px;
+}
+
+h1{
+  color:#e50914;
+  text-align:center;
+}
+
+input{
+  width:100%;
+  padding:14px;
+  margin:10px 0;
+  box-sizing:border-box;
+  background:#222;
+  color:white;
+  border:1px solid #444;
+  border-radius:6px;
+}
+
+button{
+  width:100%;
+  padding:14px;
+  margin-top:10px;
+  background:#e50914;
+  color:white;
+  border:0;
+  border-radius:6px;
+  font-size:16px;
+}
+
+#message{
+  color:#ff5555;
+  text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<h1>MYFLIX</h1>
+
+<h2>🔐 Admin Login</h2>
+
+<input
+  id="username"
+  type="text"
+  placeholder="Username"
+>
+
+<input
+  id="password"
+  type="password"
+  placeholder="Password"
+>
+
+<button onclick="login()">
+Login
+</button>
+
+<p id="message"></p>
+
+</div>
+
+<script>
+
+async function login(){
+
+  const username =
+    document.getElementById("username").value;
+
+  const password =
+    document.getElementById("password").value;
+
+  try{
+
+    const response = await fetch("/api/login",{
+
+      method:"POST",
+
+      headers:{
+        "Content-Type":"application/json"
+      },
+
+      body:JSON.stringify({
+        username:username,
+        password:password
+      })
+
+    });
+
+    const data = await response.json();
+
+    if(data.success){
+
+      window.location.href="/admin.html";
+
+    }else{
+
+      document.getElementById("message")
+        .textContent=data.error || "Login failed";
+
+    }
+
+  }catch(error){
+
+    document.getElementById("message")
+      .textContent="Server से connection नहीं हुआ";
+
+  }
+
+}
+
+</script>
+
+</body>
+</html>
