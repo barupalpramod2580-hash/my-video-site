@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - MyFlix</title>
+
+<style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:#0b0b0b;
+  color:white;
+  font-family:Arial,sans-serif;
+}
+
+header{
+  background:#151515;
+  padding:15px 5%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid #292929;
+}
+
+.logo{
+  color:#e50914;
+  font-size:25px;
+  font-weight:bold;
+}
+
+header a,
+header button{
+  background:#e50914;
+  color:white;
+  border:0;
+  padding:10px 15px;
+  border-radius:6px;
+  text-decoration:none;
+}
+
+main{
+  width:92%;
+  max-width:900px;
+  margin:30px auto;
+}
+
+.box{
+  background:#171717;
+  padding:22px;
+  margin-bottom:25px;
+  border-radius:12px;
+}
+
+h2{
+  margin-top:0;
+}
+
+input,
+textarea{
+  width:100%;
+  padding:13px;
+  margin:8px 0 15px;
+  background:#222;
+  color:white;
+  border:1px solid #444;
+  border-radius:6px;
+}
+
+textarea{
+  min-height:100px;
+  resize:vertical;
+}
+
+button{
+  cursor:pointer;
+}
+
+.primary{
+  width:100%;
+  padding:14px;
+  background:#e50914;
+  color:white;
+  border:0;
+  border-radius:6px;
+  font-size:16px;
+}
+
+.status{
+  margin-top:15px;
+  color:#aaa;
+}
+
+.video-item{
+  background:#222;
+  padding:15px;
+  border-radius:8px;
+  margin:10px 0;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+
+.delete{
+  background:#b00020;
+  color:white;
+  border:0;
+  padding:9px 12px;
+  border-radius:5px;
+}
+
+.small{
+  color:#888;
+  font-size:13px;
+}
+
+@media(max-width:600px){
+
+  .video-item{
+    display:block;
+  }
+
+  .delete{
+    margin-top:10px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+
+  <div class="logo">MYFLIX ADMIN</div>
+
+  <div>
+    <a href="/">Home</a>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+</header>
+
+<main>
+
+<!-- UPLOAD -->
+
+<div class="box">
+
+<h2>📤 Upload Video</h2>
+
+<form id="uploadForm">
+
+<label>Video Title</label>
+
+<input
+  type="text"
+  name="title"
+  placeholder="Enter video title"
+  required
+>
+
+<label>Description</label>
+
+<textarea
+  name="description"
+  placeholder="Enter video description"
+></textarea>
+
+<label>Thumbnail</label>
+
+<input
+  type="file"
+  name="thumbnail"
+  accept="image/*"
+>
+
+<label>Video File</label>
+
+<input
+  type="file"
+  name="video"
+  accept="video/*"
+  required
+>
+
+<button
+  class="primary"
+  type="submit"
+>
+Upload Video
+</button>
+
+</form>
+
+<p id="uploadStatus" class="status"></p>
+
+</div>
+
+
+<!-- ADD UPLOADER -->
+
+<div class="box">
+
+<h2>👤 Give Upload Permission</h2>
+
+<p class="small">
+यहाँ किसी trusted व्यक्ति का username और password बनाकर
+उसे video upload करने की permission दे सकते हो।
+</p>
+
+<input
+  id="newUsername"
+  type="text"
+  placeholder="New username"
+>
+
+<input
+  id="newPassword"
+  type="password"
+  placeholder="New password"
+>
+
+<button
+  class="primary"
+  onclick="createUploader()"
+>
+Create Uploader
+</button>
+
+<p id="userStatus" class="status"></p>
+
+</div>
+
+
+<!-- VIDEOS -->
+
+<div class="box">
+
+<h2>🎬 Uploaded Videos</h2>
+
+<div id="videoList">
+Loading...
+</div>
+
+</div>
+
+</main>
+
+<script>
+
+async function checkLogin(){
+
+  try{
+
+    const response = await fetch("/api/me");
+
+    const data = await response.json();
+
+    if(!data.user){
+
+      window.location.href="/login.html";
+      return;
+
+    }
+
+  }catch(error){
+
+    window.location.href="/login.html";
+
+  }
+
+}
+
+
+document
+.getElementById("uploadForm")
+.addEventListener("submit", async function(event){
+
+  event.preventDefault();
+
+  const status =
+    document.getElementById("uploadStatus");
+
+  status.textContent =
+    "⏳ Video upload हो रहा है...";
+
+  const formData = new FormData(this);
+
+  try{
+
+    const response = await fetch(
+      "/api/upload",
+      {
+        method:"POST",
+        body:formData
+      }
+    );
+
+    const data = await response.json();
+
+    if(data.success){
+
+      status.textContent =
+        "✅ Video successfully upload हो गया!";
+
+      this.reset();
+
+      loadVideos();
+
+    }else{
+
+      status.textContent =
+        "❌ " + (data.error || "Upload failed");
+
+    }
+
+  }catch(error){
+
+    status.textContent =
+      "❌ Server से connection नहीं हुआ।";
+
+  }
+
+});
+
+
+async function createUploader(){
+
+  const username =
+    document.getElementById("newUsername").value.trim();
+
+  const password =
+    document.getElementById("newPassword").value;
+
+  const status =
+    document.getElementById("userStatus");
+
+  if(!username || !password){
+
+    status.textContent =
+      "Username और password दोनों भरें।";
+
+    return;
+
+  }
+
+  try{
+
+    const response = await fetch(
+      "/api/users",
+      {
+        method:"POST",
+
+        headers:{
+          "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+          username:username,
+          password:password
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if(data.success){
+
+      status.textContent =
+        "✅ Uploader permission बना दी गई।";
+
+      document.getElementById("newUsername").value="";
+      document.getElementById("newPassword").value="";
+
+    }else{
+
+      status.textContent =
+        "❌ " + (data.error || "Error");
+
+    }
+
+  }catch(error){
+
+    status.textContent =
+      "❌ Server error";
+
+  }
+
+}
+
+
+async function loadVideos(){
+
+  const box =
+    document.getElementById("videoList");
+
+  try{
+
+    const response =
+      await fetch("/api/videos");
+
+    const videos =
+      await response.json();
+
+    if(videos.length === 0){
+
+      box.innerHTML =
+        "<p class='small'>अभी कोई video upload नहीं हुआ है।</p>";
+
+      return;
+
+    }
+
+    box.innerHTML="";
+
+    videos.forEach(video=>{
+
+      const item =
+        document.createElement("div");
+
+      item.className="video-item";
+
+      item.innerHTML=`
+
+        <div>
+          <strong>${escapeHTML(video.title)}</strong>
+
+          <div class="small">
+            Uploaded by:
+            ${escapeHTML(video.uploaded_by || "Unknown")}
+          </div>
+        </div>
+
+        <button
+          class="delete"
+          onclick="deleteVideo(${video.id})"
+        >
+          🗑 Delete
+        </button>
+
+      `;
+
+      box.appendChild(item);
+
+    });
+
+  }catch(error){
+
+    box.innerHTML =
+      "<p class='small'>Videos load नहीं हो पाए।</p>";
+
+  }
+
+}
+
+
+async function deleteVideo(id){
+
+  const confirmDelete =
+    confirm("क्या तुम इस video को delete करना चाहते हो?");
+
+  if(!confirmDelete){
+    return;
+  }
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/videos/" + id,
+        {
+          method:"DELETE"
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if(data.success){
+
+      alert("Video deleted.");
+
+      loadVideos();
+
+    }else{
+
+      alert(data.error || "Delete failed");
+
+    }
+
+  }catch(error){
+
+    alert("Server error");
+
+  }
+
+}
+
+
+async function logout(){
+
+  await fetch(
+    "/api/logout",
+    {
+      method:"POST"
+    }
+  );
+
+  window.location.href="/";
+
+}
+
+
+function escapeHTML(text){
+
+  return String(text)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+
+}
+
+
+checkLogin();
+loadVideos();
+
+</script>
+
+</body>
+</html>
